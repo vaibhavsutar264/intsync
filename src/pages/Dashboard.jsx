@@ -39,9 +39,10 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [isEditing, setIsEditing] = useState(true);
+  const [customApiKey, setCustomApiKey] = useState(localStorage.getItem('user_gemini_api_key') || '');
+  const [tempKey, setTempKey] = useState('');
 
   // Load custom API key fallback from localStorage (or VITE_GEMINI_API_KEY env)
-  const customApiKey = localStorage.getItem('user_gemini_api_key') || '';
   const isEnvKeyConfigured = !!import.meta.env.VITE_GEMINI_API_KEY;
   const isApiReady = isEnvKeyConfigured || !!customApiKey;
 
@@ -177,13 +178,12 @@ const Dashboard = () => {
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
-        const { width, height } = entry.contentRect;
+        const { height } = entry.contentRect;
         // Container has px: 2 (16px left + 16px right = 32px padding)
-        // Container has pt: 0, pb: 4 (32px bottom padding). Add 4px extra height as a safety margin
-        const paddingWidth = 32;
+        // Container has pt: 0, pb: 4 (32px bottom padding). Add 36px padding height as safety margin
         const paddingHeight = 36; 
 
-        const finalWidth = Math.ceil(width + paddingWidth);
+        const finalWidth = 550; // Lock width to 550px to prevent layout squeeze feedback loops in Electron
         const finalHeight = Math.ceil(height + paddingHeight);
 
         window.electronAPI.resizeWindow(finalWidth, finalHeight);
@@ -195,7 +195,7 @@ const Dashboard = () => {
     return () => {
       resizeObserver.disconnect();
     };
-  }, [aiResponse, loading, apiError]);
+  }, [aiResponse, loading, apiError, isApiReady]);
 
   // 2. Silence auto-submit timer (stops mic, which triggers submission below)
   useEffect(() => {
@@ -230,6 +230,88 @@ const Dashboard = () => {
     liveTranscript = 'Voice captured. Sending to Gemini...';
   } else if (speech.interimTranscript) {
     liveTranscript = (speech.transcript + speech.interimTranscript).trim();
+  }
+
+  if (!isApiReady) {
+    return (
+      <Container
+        ref={containerRef}
+        maxWidth="sm"
+        sx={{
+          pt: 4,
+          pb: 4,
+          px: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          minHeight: 'auto',
+          maxWidth: '550px !important',
+        }}
+      >
+        <Card
+          sx={{
+            width: '100%',
+            backgroundColor: 'rgba(30, 41, 59, 0.25)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(168, 85, 247, 0.2)',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
+            p: 3,
+          }}
+        >
+          <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 0 }}>
+            <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 600, textAlign: 'center' }}>
+              Gemini API Key Required
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#94a3b8', textAlign: 'center', mb: 1 }}>
+              Please enter your Gemini API key to proceed. Your key will be saved securely in your browser's local storage.
+            </Typography>
+            <TextField
+              fullWidth
+              size="small"
+              type="password"
+              placeholder="Enter Gemini API Key (AIzaSy...)"
+              value={tempKey}
+              onChange={(e) => setTempKey(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                  borderRadius: '10px',
+                  color: '#f8fafc',
+                  fontSize: '0.9rem',
+                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.08)' },
+                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.15)' },
+                  '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={() => {
+                const key = tempKey.trim();
+                if (key) {
+                  localStorage.setItem('user_gemini_api_key', key);
+                  setCustomApiKey(key);
+                }
+              }}
+              sx={{
+                textTransform: 'none',
+                borderRadius: '8px',
+                fontWeight: 600,
+                backgroundColor: '#3b82f6',
+                '&:hover': { backgroundColor: '#2563eb' },
+                py: 1,
+                mt: 1,
+              }}
+            >
+              Save Key & Proceed
+            </Button>
+          </CardContent>
+        </Card>
+      </Container>
+    );
   }
 
   return (
@@ -351,7 +433,7 @@ const Dashboard = () => {
         </Box>
 
         {/* Question Input Field (Hidden when not editing/typing) */}
-        {isEditing && (
+        
           <TextField
             ref={inputRef}
             fullWidth
@@ -410,7 +492,6 @@ const Dashboard = () => {
               },
             }}
           />
-        )}
       </Card>
 
       {/* 2. Sample Answer Card (Centered Teleprompter display) */}

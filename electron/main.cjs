@@ -50,8 +50,12 @@ function createWindow() {
   // Making the window invisible/transparent to Teams, Zoom, OBS, Slack, and Snipping Tool.
   win.setContentProtection(true);
 
-  // Load the Vite local development server
-  win.loadURL('http://localhost:5173');
+  // Load the Vite local development server (or built files in production)
+  if (app.isPackaged) {
+    win.loadFile(path.join(__dirname, '../dist/index.html'));
+  } else {
+    win.loadURL('http://localhost:5173');
+  }
 
   // Re-apply protection and lock minimization when showing or restoring to prevent state-clearing bugs in certain OS versions
   win.on('show', () => {

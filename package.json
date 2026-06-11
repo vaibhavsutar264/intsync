@@ -9,7 +9,33 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "electron:dev": "electron ."
+    "electron:dev": "electron .",
+    "electron": "node electron/dev-runner.cjs",
+    "electron:build": "vite build && electron-builder"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vaibhavsutar264/intsync.git"
+  },
+  "build": {
+    "appId": "com.intsync.coach",
+    "productName": "AI Interview Coach",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "vaibhavsutar264",
+      "repo": "intsync"
+    }
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -26,6 +52,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "electron": "^42.4.0",
+    "electron-builder": "^26.15.2",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
